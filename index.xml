@@ -6,8 +6,93 @@
     <description>Recent content on 27&#39;s blog</description>
     <generator>Hugo -- 0.145.0</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 17 Apr 2025 08:17:59 -0500</lastBuildDate>
+    <lastBuildDate>Thu, 24 Apr 2025 08:20:52 -0500</lastBuildDate>
     <atom:link href="https://ninana27.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>PE文件结构学习0x01 - 深入DOS Header并将其打印</title>
+      <link>https://ninana27.github.io/posts/pe-learning/pe-1/</link>
+      <pubDate>Thu, 24 Apr 2025 08:20:52 -0500</pubDate>
+      <guid>https://ninana27.github.io/posts/pe-learning/pe-1/</guid>
+      <description>&lt;h2 id=&#34;介绍&#34;&gt;介绍&lt;/h2&gt;
+&lt;p&gt;上一篇文章我们简要地介绍了PE文件结构，这篇文章将深入学习它的第一部分 &lt;strong&gt;DOS Header&lt;/strong&gt;，并用 C 语言打印详细信息。&lt;/p&gt;
+&lt;h2 id=&#34;dos-header&#34;&gt;DOS Header&lt;/h2&gt;
+&lt;h3 id=&#34;概述&#34;&gt;概述&lt;/h3&gt;
+&lt;p&gt;PE 文件起源于 MS-DOS 可执行文件格式，因此保留了一个兼容结构 —— DOS Header（也称为 MS-DOS Header ），是一个 64 字节长的结构，即 &lt;code&gt;IMAGE_DOS_HEADER&lt;/code&gt;。我们可以借助 &lt;code&gt;PE-bear&lt;/code&gt; 查看DOS Header这部分：&lt;/p&gt;
+&lt;p&gt;&lt;img alt=&#34;DOS Header&#34; loading=&#34;lazy&#34; src=&#34;https://ninana27.github.io/images/pe-learning/pe-1-1.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;这部分在现代 Windows 程序中虽然已不再负责运行程序的主要功能，但仍然起到两个重要作用：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;向后兼容 MS-DOS 系统（在 MS-DOS 模式下运行时，会运行 DOS Stub 里的 DOS 程序）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;指出真正的 PE 头（NT Header）在文件中的位置&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;image_dos_header&#34;&gt;IMAGE_DOS_HEADER&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;IMAGE_DOS_HEADER&lt;/code&gt;是一个 64 字节长的结构体，我们可以在 Windows SDK 的 &lt;code&gt;winnt.h&lt;/code&gt; 头文件中找到 IMAGE_DOS_HEADER
+的结构定义：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-C&#34; data-lang=&#34;C&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;_IMAGE_DOS_HEADER&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;      &lt;span class=&#34;c1&#34;&gt;// DOS .EXE header
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_magic&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                     &lt;span class=&#34;c1&#34;&gt;// Magic number
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_cblp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                      &lt;span class=&#34;c1&#34;&gt;// Bytes on last page of file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_cp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                        &lt;span class=&#34;c1&#34;&gt;// Pages in file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_crlc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                      &lt;span class=&#34;c1&#34;&gt;// Relocations
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_cparhdr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                   &lt;span class=&#34;c1&#34;&gt;// Size of header in paragraphs
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_minalloc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                  &lt;span class=&#34;c1&#34;&gt;// Minimum extra paragraphs needed
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_maxalloc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                  &lt;span class=&#34;c1&#34;&gt;// Maximum extra paragraphs needed
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_ss&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                        &lt;span class=&#34;c1&#34;&gt;// Initial (relative) SS value
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_sp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                        &lt;span class=&#34;c1&#34;&gt;// Initial SP value
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_csum&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                      &lt;span class=&#34;c1&#34;&gt;// Checksum
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_ip&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                        &lt;span class=&#34;c1&#34;&gt;// Initial IP value
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_cs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                        &lt;span class=&#34;c1&#34;&gt;// Initial (relative) CS value
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_lfarlc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                    &lt;span class=&#34;c1&#34;&gt;// File address of relocation table
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_ovno&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                      &lt;span class=&#34;c1&#34;&gt;// Overlay number
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_res&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;4&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;                    &lt;span class=&#34;c1&#34;&gt;// Reserved words
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_oemid&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                     &lt;span class=&#34;c1&#34;&gt;// OEM identifier (for e_oeminfo)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_oeminfo&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                   &lt;span class=&#34;c1&#34;&gt;// OEM information; e_oemid specific
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;WORD&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_res2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;                  &lt;span class=&#34;c1&#34;&gt;// Reserved words
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;LONG&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;e_lfanew&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                    &lt;span class=&#34;c1&#34;&gt;// File address of new exe header
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;IMAGE_DOS_HEADER&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;PIMAGE_DOS_HEADER&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这段结构体包含多个字段，对于 PE 文件在 MS-DOS 模式下运行时非常重要，但接下来不会介绍所有的字段，只介绍几个关键的字段。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>PE文件结构学习0x00 - 初识PE</title>
+      <link>https://ninana27.github.io/posts/pe-learning/pe-0/</link>
+      <pubDate>Wed, 23 Apr 2025 10:01:37 -0500</pubDate>
+      <guid>https://ninana27.github.io/posts/pe-learning/pe-0/</guid>
+      <description>&lt;h2 id=&#34;前言&#34;&gt;前言&lt;/h2&gt;
+&lt;p&gt;这是学习PE文件结构的开始，学习PE文件结构旨在了解 PE 文件的基本概念和重要性，并尝试编程手动解析 PE 文件。&lt;/p&gt;
+&lt;h2 id=&#34;认识pe以及pe文件格式&#34;&gt;认识PE以及PE文件格式&lt;/h2&gt;
+&lt;p&gt;PE(Portable Executable)：可移植性可执行文件。&lt;/p&gt;
+&lt;p&gt;PE文件格式是一种可用于32位和64位 Windows 操作系统以及 UEFI 环境的程序文件格式，它是基于Windows NT 的系统上可执行文件的标准格式，是微软在 COFF（Common Object File Format）基础上发展而来的格式。常见的PE文件有：可执行程序&lt;code&gt;.exe&lt;/code&gt;， 动态链接库&lt;code&gt;.dll&lt;/code&gt;， 驱动程序&lt;code&gt;.sys&lt;/code&gt; 等。&lt;/p&gt;
+&lt;p&gt;PE 文件是一种数据结构，它保存了 Windows 操作系统加载器（PE装载器）将可执行文件映射到内存中并执行所需的信息。&lt;/p&gt;
+&lt;h2 id=&#34;pe文件结构概览&#34;&gt;PE文件结构概览&lt;/h2&gt;
+&lt;p&gt;一个 PE 文件的结构大致如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| DOS Header                                |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| DOS Stub                                  |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| NT Headers:                               |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  +------------------------------------+   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  |PE Signature                        |   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  +------------------------------------+   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  |File Header                         |   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  +------------------------------------|   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  |Optional Header                     |   |              
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;|  +------------------------------------+   |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| Section Table                             |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| Section 1  (.text)                        |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| Section 2  (.rdata)                       |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| Section 3  (.data)                        |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;| ...                                       |
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;+-------------------------------------------+
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;我们可以借助一些工具来直观查看和分析 PE 文件结构，比如使用 &lt;a href=&#34;https://github.com/hasherezade/pe-bear&#34;&gt;&lt;code&gt;PE-bear&lt;/code&gt;&lt;/a&gt;来查看PE文件的大致结构：&lt;/p&gt;</description>
+    </item>
     <item>
       <title>First Post</title>
       <link>https://ninana27.github.io/posts/first-post/</link>
