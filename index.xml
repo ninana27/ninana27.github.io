@@ -6,8 +6,28 @@
     <description>Recent content on 27&#39;s blog</description>
     <generator>Hugo -- 0.145.0</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 24 Apr 2025 08:20:52 -0500</lastBuildDate>
+    <lastBuildDate>Sat, 26 Apr 2025 00:16:54 -0500</lastBuildDate>
     <atom:link href="https://ninana27.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>PE文件结构学习0x02 - 详解 DOS Stub</title>
+      <link>https://ninana27.github.io/posts/pe-learning/pe-2/</link>
+      <pubDate>Sat, 26 Apr 2025 00:16:54 -0500</pubDate>
+      <guid>https://ninana27.github.io/posts/pe-learning/pe-2/</guid>
+      <description>&lt;h2 id=&#34;介绍&#34;&gt;介绍&lt;/h2&gt;
+&lt;p&gt;上一篇文章我们深入了解了DOS Header，其中我们谈到了它的一个重要作用 —— 向后兼容 MS-DOS 系统（在 MS-DOS 模式下运行时，会运行 DOS Stub 里的 DOS 程序）。那么 DOS Stub 是个怎样的 DOS 程序，这篇文章就让我们来一探究竟。&lt;/p&gt;
+&lt;h2 id=&#34;dos-stub-概述&#34;&gt;DOS Stub 概述&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;DOS Stub&lt;/strong&gt; 紧跟在 DOS 头之后，位于 NT 头之前。DOS Stub 区域从偏移 0x40（DOS Header 结束处）开始，到 &lt;code&gt;e_lfanew&lt;/code&gt; 指定位置（PE 头）之前的一段空间。在 DOS 环境下运行时，它会打印出 “This program cannot be run in DOS mode” 的错误消息。
+在 PE-bear 查看这部分：&lt;/p&gt;
+&lt;p&gt;&lt;img loading=&#34;lazy&#34; src=&#34;https://ninana27.github.io/images/pe-learning/pe-2-1.png&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;dos-环境测试-pe&#34;&gt;DOS 环境测试 PE&lt;/h2&gt;
+&lt;p&gt;DOS 环境：&lt;a href=&#34;https://www.dosbox.com/&#34;&gt;DOSBox&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;在 DOS 环境运行测试程序：&lt;/p&gt;
+&lt;p&gt;&lt;img loading=&#34;lazy&#34; src=&#34;https://ninana27.github.io/images/pe-learning/pe-2-2.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;在正常的CMD环境运行测试程序：&lt;/p&gt;
+&lt;p&gt;&lt;img loading=&#34;lazy&#34; src=&#34;https://ninana27.github.io/images/pe-learning/pe-2-3.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;可以看到在 DOS 环境下打印了“This program cannot be run in DOS mode.”，DOS Stub
+被执行了。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>PE文件结构学习0x01 - 深入DOS Header并将其打印</title>
       <link>https://ninana27.github.io/posts/pe-learning/pe-1/</link>
